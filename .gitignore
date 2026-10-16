@@ -33,3 +33,15 @@ yarn-error.log*
 
 .statekeeper/
 screenshots/
+
+# local experiments & heavy data (not part of the portfolio app)
+heartmate/
+mic-toggle/
+agentic-ai-workshop/
+graphify-out/
+.stitch/
+shot.mjs
+tcy_*.json
+*.ipynb
+oop-notes.pdf
+Sheshanth_Shetty_CV.pdf

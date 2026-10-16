@@ -1,236 +1,808 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Exact quangdinh.im typefaces — files already in public/fonts */
+@font-face {
+  font-family: "PangeaAfrikan";
+  src: url("/fonts/PangeaAfrikan-Light.woff2") format("woff2");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PangeaAfrikan";
+  src: url("/fonts/PangeaAfrikan-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GeistMono";
+  src: url("/fonts/GeistMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "InstrumentSerif";
+  src: url("/fonts/InstrumentSerif-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "InstrumentSerif";
+  src: url("/fonts/InstrumentSerif-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* quangdinh.im header typography — exact family + size, dark-theme colors kept */
+@layer components {
+  .qd-header-section {
+    padding-top: 28px;
+  }
+  @media (max-width: 1024px) {
+    .qd-header-section {
+      padding-top: 28px;
+    }
+  }
+  @media (max-width: 430px) {
+    .qd-header-section {
+      padding-top: 20px;
+    }
+  }
+  /* heading-4: 20px / 100% / -0.02em — Companies list */
+  .qd-heading-4 {
+    font-family: "PangeaAfrikan", system-ui, sans-serif;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+  }
+  @media (max-width: 1024px) {
+    .qd-heading-4 {
+      font-size: 16px;
+    }
+  }
+  @media (max-width: 430px) {
+    .qd-heading-4 {
+      font-size: 16px;
+    }
+  }
+  /* italic titles: InstrumentSerif Italic, body size 16px, lh 150% */
+  .qd-title-italic {
+    font-family: "InstrumentSerif", Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 150%;
+    letter-spacing: 0;
+    margin-bottom: 16px;
+  }
+  /* body copy: PangeaAfrikan Regular 16px, lh 112% */
+  .qd-body-copy {
+    font-family: "PangeaAfrikan", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 112%;
+    letter-spacing: -0.014em;
+    text-wrap: balance;
+  }
+  .qd-header-copy {
+    max-width: 230px;
+    position: relative;
+  }
+  /* About Me unfolds in place: title-only collapsed, full bio on click.
+     Height animates via grid-rows, with the house opacity/blur language. */
+  .qd-about-toggle {
+    display: inline-flex;
+    align-items: baseline;
+    background: transparent;
+    padding: 0;
+    transition: opacity 0.3s ease;
+  }
+  .qd-about-toggle:hover {
+    opacity: 0.65;
+  }
+  .qd-about-marker {
+    font-family: "GeistMono", ui-monospace, monospace;
+    font-size: 12px;
+    font-style: normal;
+    color: rgba(242, 237, 228, 0.5);
+    margin-left: 10px;
+  }
+  /* About Me floats in right here: an overlay patch of plain text, like
+     the Contact lines — no box, no border. Nothing below ever moves.
+     Same 16px Pangea as Focus/Contact; chars dissolve with the house
+     Home → Projects stagger. */
+  .qd-about-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: min(300px, 78vw);
+    padding-right: 28px;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    filter: blur(6px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.35s ease,
+      visibility 0.35s;
+  }
+  .qd-about-panel.open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+  .qd-about-expand {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    filter: blur(6px);
+    transition:
+      grid-template-rows 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.45s ease,
+      filter 0.45s ease;
+  }
+  .qd-companies-gap {
+    gap: 8px;
+  }
+  /* Pills live underneath the chrome (z-20 vs header/footer z-30): any
+     transparent overlay would eat re-grabs and strand dropped pills.
+     Non-interactive chrome is click-through; links/buttons stay live. */
+  header[data-purpose="site-header"],
+  footer[data-purpose="bottom-navigation-and-media"] {
+    pointer-events: none;
+  }
+  header[data-purpose="site-header"] a,
+  header[data-purpose="site-header"] button,
+  footer[data-purpose="bottom-navigation-and-media"] a,
+  footer[data-purpose="bottom-navigation-and-media"] button {
+    pointer-events: auto;
+  }
+  .hero-wordmark {
+    pointer-events: none;
+  }
+  /* Pushable buttons: translate must apply instantly every frame, so it
+     is carved out of their `transition-all` (colors/borders still ease). */
+  [data-push] {
+    transition-property: background-color, border-color, color, box-shadow,
+      opacity;
+  }
+  /* Char-dissolve spans — quangdinh.im .char equivalent */
+  .qd-split {
+    display: inline;
+  }
+  .qd-char {
+    display: inline-block;
+    will-change: opacity;
+  }
+  /* Bottom-dock pills in the Companies typeface (PangeaAfrikan 400).
+     Size follows the reference nav (16px body), not the 20px heading-4 —
+     same family, weight, and tracking as the Companies list. */
+  .qd-nav-pill {
+    font-family: "PangeaAfrikan", system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    letter-spacing: -0.02em;
+  }
+  /* Dock social labels in the Companies/About/Contact typeface */
+  nav[aria-label="Social Links"] {
+    font-family: "PangeaAfrikan", system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  nav[aria-label="Quick Navigation"] a {
+    transition:
+      background-color 1.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+      color 1.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+      border-color 1.2s cubic-bezier(0.215, 0.61, 0.355, 1),
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .qd-char {
+      animation: none;
+      transition: none;
+    }
+  }
+}
 
 @theme {
-  --color-naka-black: #0a0a0a;
-  --color-naka-white: #ffffff;
-  --color-naka-cream: #f7f7f7;
-  --color-naka-warm: #f4f1ea;
-  --color-naka-gold: #e3c100;
-  --color-naka-text: #1a1a1a;
-  --color-naka-muted: #707070;
-  --color-naka-light: #999;
-  --color-naka-border: rgba(0, 0, 0, 0.08);
-  --color-naka-periwinkle: #7f98fa;
-  --color-naka-green: #63c58f;
-  --color-naka-orange: #fb963c;
-  --color-naka-dark-green: #23583b;
-  --color-naka-dark-blue: #2e35a5;
-  --color-naka-dark-orange: #b24f15;
-  --color-naka-dark-text: #111;
+  --font-sans: "PangeaAfrikan", "Manrope", system-ui, sans-serif;
+  --font-primary: "PangeaAfrikan", system-ui, sans-serif;
+  --font-secondary: "GeistMono", ui-monospace, monospace;
+  --font-tertiary: "InstrumentSerif", Georgia, serif;
+  --font-geist-mono: "GeistMono", ui-monospace, monospace;
 
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-bricolage-grotesque);
-  --font-mono: var(--font-jetbrains-mono);
+  --color-bgDark: #141414;
+  --color-bone: #f2ede4;
+  --color-muted: #85817b;
+  --color-champagne: #c9bba6;
+  --color-accentGreen: #c6f68d;
+  --color-accentPink: #ffaaa6;
 }
 
 @layer base {
   * {
     box-sizing: border-box;
-    @apply border-border outline-ring/50;
-  }
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-inter);
-    font-weight: 400;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background: #faf9f6;
-    color: var(--color-naka-text);
-    @apply bg-background text-foreground;
   }
   html {
+    scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
   html::-webkit-scrollbar {
     display: none;
   }
+  body {
+    background-color: #141414;
+    color: #f2ede4;
+    font-family: "Manrope", sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+    -webkit-text-rendering: optimizeSpeed;
+    /* NOTE: no transform/filter here — any of them breaks
+       position:fixed descendants (e.g. #floating-preview-portal),
+       making them position against the scrolling body instead of
+       the viewport so clientX/clientY coords land way off-cursor. */
+  }
   ::selection {
-    background: var(--color-naka-gold);
-    color: var(--color-naka-black);
-  }
-  html {
-    @apply font-sans;
+    background: #f2ede4;
+    color: #141414;
   }
 }
 
-html { scroll-behavior: smooth; }
-
-@keyframes float {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-3deg); }
-  50% { transform: translate3d(0, -12px, 0) rotate(-1deg); }
+/* Huge display wordmark scaling and 3D papercut / layered depth effect */
+.hero-wordmark {
+  font-size: clamp(5rem, 18.5vw, 21rem);
+  line-height: 0.82;
+  letter-spacing: -0.07em;
+  font-weight: 800;
+  color: #f4efea;
+  user-select: none;
+  text-shadow:
+    -1px 2px 0px rgba(0, 0, 0, 0.4),
+    0 18px 40px rgba(0, 0, 0, 0.95);
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.editorial-card {
-  box-shadow: 0 1px 1px rgb(17 17 17 / 3%), 0 10px 30px rgb(17 17 17 / 7%);
+/* Kinetic animated letter style */
+.char-node {
+  display: inline-block;
+  position: relative;
+  transition:
+    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity, filter;
 }
 
-.premium-button {
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 20%) inset,
-    0 12px 26px rgb(0 0 0 / 16%),
-    0 2px 8px rgb(0 0 0 / 10%);
-  transition: transform 320ms ease, box-shadow 320ms ease, background-color 320ms ease, color 320ms ease;
+.char-node.exit-up {
+  transform: translateY(-55%) scale(0.85) rotate(-6deg);
+  opacity: 0;
+  filter: blur(8px);
 }
 
-.premium-button:hover {
-  transform: translate3d(0, -2px, 0);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 24%) inset,
-    0 20px 38px rgb(0 0 0 / 20%),
-    0 4px 14px rgb(0 0 0 / 12%);
+.char-node.exit-down {
+  transform: translateY(55%) scale(0.85) rotate(6deg);
+  opacity: 0;
+  filter: blur(8px);
 }
 
-.about-feature-card {
-  box-shadow:
-    0 20px 40px rgb(0 0 0 / 15%),
-    0 40px 80px rgb(0 0 0 / 8%),
-    0 80px 120px rgb(0 0 0 / 5%);
+.char-node.enter-prep {
+  transform: translateY(60%) scale(0.82) rotate(4deg);
+  opacity: 0;
+  filter: blur(8px);
 }
 
-.project-art::before,
-.project-art::after {
-  content: "";
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(1px);
+.char-node.active-char {
+  transform: translateY(0) scale(1) rotate(0deg);
+  opacity: 1;
+  filter: blur(0px);
 }
 
-.project-art::before {
-  width: 62%; height: 62%; right: -10%; top: -16%;
-  background: rgb(255 255 255 / 24%);
+/* Decorative accents transition states */
+.hero-accent {
+  transition: all 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+.hero-accent.accent-hidden {
+  opacity: 0 !important;
+  transform: scale(0.4) translateY(20px) !important;
+  pointer-events: none !important;
 }
 
-.project-art::after {
-  width: 45%; height: 45%; bottom: -18%; left: 8%;
-  background: rgb(10 10 10 / 18%);
+/* Subdued border styling */
+.subtle-border {
+  border-color: rgba(242, 237, 228, 0.14);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .project-art > span { animation: float 6s ease-in-out infinite; }
+.subtle-pill {
+  background-color: rgba(22, 22, 22, 0.65);
+  border: 1px solid rgba(242, 237, 228, 0.12);
+  backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.subtle-pill:hover {
+  border-color: rgba(242, 237, 228, 0.35);
+  background-color: rgba(35, 35, 35, 0.85);
+  transform: translateY(-2px);
 }
 
-.scrollbar-hide::-webkit-scrollbar {
+/* Active nav pill style */
+.nav-pill-active {
+  background-color: #f2ede4 !important;
+  color: #141414 !important;
+  border: 1px solid #f2ede4 !important;
+  box-shadow: 0 4px 14px rgba(242, 237, 228, 0.18);
+}
+
+/* Spotify audio wave bars animation */
+@keyframes soundBar {
+  0%,
+  100% {
+    height: 4px;
+  }
+  50% {
+    height: 16px;
+  }
+}
+.wave-bar-1 {
+  animation: soundBar 1.2s ease-in-out infinite;
+}
+.wave-bar-2 {
+  animation: soundBar 1.2s ease-in-out infinite 0.2s;
+}
+.wave-bar-3 {
+  animation: soundBar 1.2s ease-in-out infinite 0.4s;
+}
+.wave-bar-4 {
+  animation: soundBar 1.2s ease-in-out infinite 0.15s;
+}
+
+/* Subtle breathing for static interest pills */
+@keyframes pill-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+.pill-breathe {
+  animation: pill-breathe 3.2s ease-in-out infinite;
+}
+
+/* ---- FINAL PROJECTSLIDE one-page mode switch ---- */
+.home-vanish {
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.45s ease,
+    visibility 0.45s;
+  will-change: opacity, transform, filter;
+}
+/* Directory mode: hero stays tall so the wordmark sits dead-center */
+.hero-viewport {
+  min-height: 70vh;
+  transition: min-height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Directory exists in layout only in projects mode */
+#project-directory {
   display: none;
 }
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.mode-projects #project-directory {
+  display: block;
 }
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+/* Home mode is locked — no scroll activity until a click opens projects */
+html.no-scroll,
+html.no-scroll body {
+  overflow: hidden;
+}
+.mode-projects .home-vanish {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-24px) scale(0.96) !important;
+  filter: blur(6px) !important;
+  visibility: hidden;
 }
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+.footer-vanish {
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.45s ease,
+    visibility 0.45s;
+}
+.mode-projects .footer-vanish {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(20px) scale(0.96) !important;
+  filter: blur(6px) !important;
+  visibility: hidden;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Sriyaan letters scatter out */
+.letter-span {
+  display: inline-block;
+  position: relative;
+  transition:
+    transform 0.65s cubic-bezier(0.2, 0.9, 0.3, 1),
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease;
+  will-change: transform, opacity, filter;
+}
+.mode-projects .letter-sriyaan-1 { transform: translateY(-70px) rotate(-14deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0s; }
+.mode-projects .letter-sriyaan-2 { transform: translateY(80px) rotate(16deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.03s; }
+.mode-projects .letter-sriyaan-3 { transform: translateY(-90px) rotate(-10deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.06s; }
+.mode-projects .letter-sriyaan-4 { transform: translateY(110px) rotate(20deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.09s; }
+.mode-projects .letter-sriyaan-5 { transform: translateY(-80px) rotate(-16deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.12s; }
+.mode-projects .letter-sriyaan-6 { transform: translateY(90px) rotate(14deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.15s; }
+.mode-projects .letter-sriyaan-7 { transform: translateY(-70px) rotate(-18deg) scale(0.65); opacity: 0; filter: blur(8px); transition-delay: 0.18s; }
+.letter-sriyaan-1 { transition-delay: 0.28s; }
+.letter-sriyaan-2 { transition-delay: 0.24s; }
+.letter-sriyaan-3 { transition-delay: 0.2s; }
+.letter-sriyaan-4 { transition-delay: 0.16s; }
+.letter-sriyaan-5 { transition-delay: 0.12s; }
+.letter-sriyaan-6 { transition-delay: 0.08s; }
+.letter-sriyaan-7 { transition-delay: 0.04s; }
+
+/* Projects wordmark overlay */
+#projects-wordmark-container {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.4s;
+}
+.mode-projects #projects-wordmark-container {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Projects letters slam in */
+.letter-proj {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(80px) scale(1.3) rotate(6deg);
+  filter: blur(12px);
+  transition:
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity, filter;
+}
+.mode-projects .letter-proj-1 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.2s; }
+.mode-projects .letter-proj-2 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.24s; }
+.mode-projects .letter-proj-3 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.28s; }
+.mode-projects .letter-proj-4 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.32s; }
+.mode-projects .letter-proj-5 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.36s; }
+.mode-projects .letter-proj-6 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.4s; }
+.mode-projects .letter-proj-7 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.44s; }
+.mode-projects .letter-proj-8 { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0px); transition-delay: 0.48s; }
+.letter-proj-1 { transition-delay: 0.14s; }
+.letter-proj-2 { transition-delay: 0.12s; }
+.letter-proj-3 { transition-delay: 0.1s; }
+.letter-proj-4 { transition-delay: 0.08s; }
+.letter-proj-5 { transition-delay: 0.06s; }
+.letter-proj-6 { transition-delay: 0.04s; }
+.letter-proj-7 { transition-delay: 0.02s; }
+.letter-proj-8 { transition-delay: 0s; }
+
+/* Cinematic whip pan */
+.cinematic-viewport {
+  transition:
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  /* NOTE: do NOT add will-change: transform/filter here — it makes this
+     element a containing block for position:fixed descendants, which breaks
+     #floating-preview-portal (it would position against this scrolling box
+     instead of the viewport and land scrollY pixels off-cursor). */
+}
+.is-transitioning .cinematic-viewport {
+  transform: scale(1.015);
+  filter: blur(1.2px) contrast(1.05);
+}
+
+/* Wordmark pins flush to the top, list lines up right below it */
+.hero-viewport {
+  min-height: 70vh;
+}
+#wordmark-stage {
+  transition:
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    scale 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.mode-projects.projects-scrolled #wordmark-stage {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  scale: 0.58;
+  transform-origin: top center;
+  margin-bottom: 0;
+}
+
+/* Editorial Project Index Section: visible in projects mode, rows drive themselves */
+#editorial-projects-section {
+  pointer-events: auto;
+}
+
+/* Editorial Project Rows */
+.project-row {
+  position: relative;
+  border-bottom: 1px solid rgba(242, 237, 228, 0.08);
+  transition:
+    border-color 0.35s ease,
+    background-color 0.35s ease;
+}
+.project-row:hover {
+  border-bottom-color: rgba(242, 237, 228, 0.32);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.project-row .row-title {
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.3s ease;
+}
+.project-row:hover .row-title {
+  transform: translateX(12px);
+  color: #ffffff;
+}
+
+.project-row .row-arrow {
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+  transform: translateX(-10px);
+  opacity: 0;
+}
+.project-row:hover .row-arrow {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Rollout entrance for the bottom-dock buttons */
+@keyframes pill-rollout {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+nav.rolls > a {
+  animation: pill-rollout 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+nav.rolls > a:nth-child(2) {
+  animation-delay: 0.09s;
+}
+nav.rolls > a:nth-child(3) {
+  animation-delay: 0.18s;
+}
+
+/* Cinematic route-switch sweep (home -> projects handoff) */
+.frame-main {
+  transition:
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.route-switching .frame-main {
+  transform: scale(1.04);
+  filter: blur(8px) brightness(1.12);
+}
+
+/* Floating Cursor Preview Port */
+#floating-preview-portal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 420px;
+  height: 270px;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(0.85);
+  transform-origin: top left;
+  will-change: transform;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 35px 80px -15px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(242, 237, 228, 0.16);
+  background-color: #121212;
+}
+#floating-preview-portal.active {
+  opacity: 1;
+}
+@media (min-width: 768px) {
+  #floating-preview-portal.active {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-node,
+  .hero-accent,
+  .pill-breathe,
+  .letter-span,
+  .letter-proj,
+  .home-vanish,
+  .footer-vanish,
+  .cinematic-viewport,
+  .project-row,
+  .project-row .row-title,
+  .project-row .row-arrow,
+  #editorial-projects-section,
+  #floating-preview-portal,
+  .qd-about-panel,
+  .qd-about-toggle,
+  .wave-bar-1,
+  .wave-bar-2,
+  .wave-bar-3,
+  .wave-bar-4 {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Theme reveal: View Transitions API, circular bloom from the toggle.
+   Old snapshot stays put while the new theme clips open over it —
+   content is never blanked, it converts part by part.
+   The clip is declared in CSS (not WAAPI-after-ready) so frame one is
+   already clipped: no fullscreen flash, no twitch. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-animating::view-transition-new(root) {
+  animation: vt-circle-reveal 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes vt-circle-reveal {
+  from {
+    clip-path: circle(0px at var(--vt-x) var(--vt-y));
+  }
+  to {
+    clip-path: circle(150vmax at var(--vt-x) var(--vt-y));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ============ LIGHT MODE (warm cream, Rhea Hinger canvas) ============
+   Unlayered on purpose: beats Tailwind utilities, so dark literals stay
+   as the default and everything below only applies under html.light. */
+html.light body {
+  background-color: #ece8df;
+  color: #1f1f1f;
+}
+html.light ::selection {
+  background: #1f1f1f;
+  color: #ece8df;
+}
+html.light .hero-wordmark {
+  color: #1f1f1f;
+  text-shadow:
+    -1px 2px 0px rgba(31, 31, 31, 0.1),
+    0 18px 40px rgba(31, 31, 31, 0.22);
+}
+html.light .subtle-pill {
+  background-color: rgba(31, 31, 31, 0.04);
+  border-color: rgba(31, 31, 31, 0.16);
+}
+html.light .subtle-pill:hover {
+  border-color: rgba(31, 31, 31, 0.4);
+  background-color: rgba(31, 31, 31, 0.08);
+}
+html.light .nav-pill-active {
+  background-color: #1f1f1f !important;
+  color: #ece8df !important;
+  border-color: #1f1f1f !important;
+  box-shadow: 0 4px 14px rgba(31, 31, 31, 0.22);
+}
+html.light .project-row {
+  border-bottom-color: rgba(31, 31, 31, 0.1);
+}
+html.light .project-row:hover {
+  border-bottom-color: rgba(31, 31, 31, 0.35);
+  background-color: rgba(31, 31, 31, 0.03);
+}
+html.light .project-row:hover .row-title {
+  color: #000000;
+}
+html.light #editorial-projects-section {
+  border-color: rgba(31, 31, 31, 0.12);
+}
+/* Component dark literals → ink (attribute selectors avoid escaping hell) */
+html.light [class*="bg-[#141414]"] {
+  background-color: #ece8df;
+}
+html.light [class*="text-[#F2EDE4]"],
+html.light [class*="text-[#ECEBE4]"] {
+  color: #1f1f1f;
+}
+html.light [class*="text-white/85"] { color: rgba(31, 31, 31, 0.85); }
+html.light [class*="text-white/80"] { color: rgba(31, 31, 31, 0.8); }
+html.light [class*="text-white/75"] { color: rgba(31, 31, 31, 0.75); }
+html.light [class*="text-white/70"] { color: rgba(31, 31, 31, 0.7); }
+html.light [class*="text-white/45"] { color: rgba(31, 31, 31, 0.6); }
+html.light [class*="text-white/35"] { color: rgba(31, 31, 31, 0.5); }
+html.light [class*="text-white/25"] { color: rgba(31, 31, 31, 0.4); }
+html.light [class*="text-white/20"] { color: rgba(31, 31, 31, 0.2); }
+html.light [class*="hover:text-white"]:hover { color: #000000; }
+html.light .group:hover [class*="group-hover:text-white"] { color: #000000; }
+html.light [class*="decoration-white/40"] { text-decoration-color: rgba(31, 31, 31, 0.3); }
+html.light [class*="hover:decoration-white"]:hover { text-decoration-color: #1f1f1f; }
+html.light [class*="divide-white/5"] > * + * { border-color: rgba(31, 31, 31, 0.1); }
+html.light [class*="border-white/10"] { border-color: rgba(31, 31, 31, 0.15); }
+html.light [class*="border-white/[0.08]"] { border-color: rgba(31, 31, 31, 0.1); }
+html.light [class*="bg-white/[0.02]"] { background-color: rgba(31, 31, 31, 0.03); }
+html.light [class*="hover:border-white/25"]:hover { border-color: rgba(31, 31, 31, 0.25); }
+html.light [class*="hover:bg-white/[0.05]"]:hover { background-color: rgba(31, 31, 31, 0.05); }
+html.light .qd-about-marker { color: rgba(31, 31, 31, 0.55); }
+
+/* GitHub bubble card entrance */
+@keyframes gh-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.gh-pop {
+  animation: gh-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom center;
+}
+/* Mirror-image exit: sinks back down instead of blinking out */
+.gh-leave {
+  animation: gh-leave 0.3s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+  transform-origin: bottom center;
+}
+@keyframes gh-leave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gh-pop {
+    animation: none;
+  }
+  .gh-leave {
+    animation: none;
+  }
 }
