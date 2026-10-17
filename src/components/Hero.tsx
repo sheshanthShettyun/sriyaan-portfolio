@@ -69,8 +69,15 @@ export default function Hero({ className = "" }: Readonly<HeroProps>) {
     );
   }, []);
 
-  /* Seesaw "Orchestrator" badge: drag either end to tilt it around its base
-     (rotation only — it never leaves its spot above the N). Springs back. */
+  /* opencode badge: fixed offset from the wordmark's right edge, in
+     stage-relative layout px (the stage is scaled 0.85, so the rendered
+     shift is 0.85x). Locked to the position picked during design review. */
+  const BADGE_OFFSET = { x: -176, y: 11 };
+
+  /* Seesaw badge: drag it sideways to tip around its base — rotation only, it
+     never leaves its fixed spot above the N, and it springs back upright on
+     release. Writes straight to the node so dragging stays frame-tight.
+     The constant 11deg tilt lives on #accent-badge, so this reads 0 at rest. */
   const badgeRef = useRef<HTMLDivElement>(null);
   const badgeAngle = useRef(0);
   const seesawRef = useRef<{ startX: number; startAngle: number } | null>(null);
@@ -95,8 +102,7 @@ export default function Hero({ className = "" }: Readonly<HeroProps>) {
     seesawRef.current = null;
     const el = badgeRef.current;
     if (!el) return;
-    el.style.transition =
-      "transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1)";
+    el.style.transition = "transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1)";
     el.style.transform = "rotate(0deg)";
     badgeAngle.current = 0;
   }, []);
@@ -244,33 +250,52 @@ export default function Hero({ className = "" }: Readonly<HeroProps>) {
         className="relative my-auto flex w-full max-w-7xl origin-center scale-[0.85] items-center justify-center"
         id="wordmark-stage"
       >
-        {/* Playful Asterisk Star (Green Accent) */}
+        {/* Playful Asterisk Star -> Claude Mark */}
         <div
           className="home-vanish pointer-events-none absolute -top-10 left-[5%] z-20 -rotate-12 duration-500 hover:rotate-45 md:-top-16 md:left-[10%] lg:left-[14%]"
           id="accent-star"
         >
           <svg
-            className="h-14 w-14 text-[#C6F68D] drop-shadow-md md:h-24 md:w-24"
-            fill="currentColor"
+            className="h-14 w-14 drop-shadow-md md:h-24 md:w-24"
+            fill="#D97757"
             viewBox="0 0 100 100"
+            aria-hidden="true"
           >
-            <path d="M50 0 C54 0 57 20 57 32 C66 23 83 9 86 13 C90 18 78 37 70 45 C82 46 100 50 100 55 C100 60 82 62 70 63 C78 72 90 90 85 94 C81 97 65 83 57 74 C57 86 54 100 49 100 C45 100 42 86 42 74 C34 83 18 97 14 94 C9 90 22 72 30 63 C18 62 0 60 0 55 C0 50 18 46 30 45 C22 37 9 18 14 13 C18 9 34 23 42 32 C42 20 46 0 50 0 Z" />
+            <path d="m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z" />
           </svg>
         </div>
-        {/* Floating "Orchestrator" Pill Badge — seesaw: drag ends to tilt */}
+        {/* Wordmark + opencode badge, anchored to the wordmark's right edge */}
+        <div className="pointer-events-none relative">
+        {/* opencode badge — fixed offset from the wordmark's right edge; holds
+            an 11deg tilt and rolls away on the design's spring curve */}
         <div
-          className="home-vanish absolute right-[4%] top-8 z-20 rotate-[11deg] md:right-[7%] md:top-10 lg:right-[9%]"
-          id="accent-badge"
+          className="absolute left-full top-8 z-20 md:top-10"
+          style={{
+            transform: `translate3d(${BADGE_OFFSET.x}px, ${BADGE_OFFSET.y}px, 0)`,
+          }}
         >
-          <div
-            ref={badgeRef}
-            onPointerDown={onBadgeDown}
-            onPointerMove={onBadgeMove}
-            onPointerUp={onBadgeUp}
-            onPointerCancel={onBadgeUp}
-            className="origin-bottom cursor-grab touch-none select-none rounded-full border border-black/10 bg-[#C6F68D] px-8 py-2.5 text-sm font-semibold tracking-tight text-[#0B0B0B] shadow-lg active:cursor-grabbing md:px-12 md:py-3.5 md:text-xl"
-          >
-            Orchestrator
+          <div className="pointer-events-none" id="accent-badge">
+            <div
+              ref={badgeRef}
+              onPointerDown={onBadgeDown}
+              onPointerMove={onBadgeMove}
+              onPointerUp={onBadgeUp}
+              onPointerCancel={onBadgeUp}
+              className="pointer-events-auto origin-bottom cursor-grab touch-none select-none active:cursor-grabbing"
+            >
+              <img
+                alt="opencode"
+                className="opencode-wm-dark pointer-events-none h-auto w-[16.2vw] max-w-[295px] select-none"
+                draggable={false}
+                src="/opencode-wordmark-dark.svg"
+              />
+              <img
+                alt="opencode"
+                className="opencode-wm-light pointer-events-none h-auto w-[16.2vw] max-w-[295px] select-none"
+                draggable={false}
+                src="/opencode-wordmark-light.svg"
+              />
+            </div>
           </div>
         </div>
         {/* Sriyaan wordmark — letters scatter out in projects mode */}
@@ -317,6 +342,7 @@ export default function Hero({ className = "" }: Readonly<HeroProps>) {
             </span>
           ))}
         </h1>
+        </div>
         {/* Projects wordmark overlay — slams in during projects mode */}
         <div
           className="absolute inset-0 z-10 flex items-center justify-center"
