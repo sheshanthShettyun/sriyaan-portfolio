@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import SpotifyPill from "./SpotifyPill";
 import GitHubCard from "./GitHubCard";
+import ExperienceBook from "./ExperienceBook";
 import { ModeProvider, useMode } from "@/lib/ModeContext";
 
 /* quangdinh.im char-dissolve: .js-anim-chars .char opacity 0,
@@ -522,6 +523,7 @@ function FrameChrome({ children }: Readonly<FrameProps>) {
                   </Link>
                 );
               })}
+              {onHome && mode === "home" ? <ExperienceBook /> : null}
               <button
                 onClick={toggleTheme}
                 data-push

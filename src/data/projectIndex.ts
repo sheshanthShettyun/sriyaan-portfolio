@@ -2,7 +2,6 @@ export interface ProjectIndexRow {
   index: string;
   title: string;
   tags: [string, string];
-  year: string;
   badge: string;
   color: string;
   image: string;
@@ -14,7 +13,6 @@ export const projectIndexRows: ProjectIndexRow[] = [
     index: "01",
     title: "Autonomous Agent Engine",
     tags: ["LLMs", "Rust"],
-    year: "2024",
     badge: "01 // SYS",
     color: "#C6F68D",
     image:
@@ -25,7 +23,6 @@ export const projectIndexRows: ProjectIndexRow[] = [
     index: "02",
     title: "Documatic Neural Search",
     tags: ["VectorDB", "Go"],
-    year: "2024",
     badge: "02 // SEARCH",
     color: "#FFAAA6",
     image:
@@ -36,7 +33,6 @@ export const projectIndexRows: ProjectIndexRow[] = [
     index: "03",
     title: "Vestlane Global Ledger",
     tags: ["Fintech", "Infra"],
-    year: "2023",
     badge: "03 // FINTECH",
     color: "#C9BBA6",
     image:
@@ -47,7 +43,6 @@ export const projectIndexRows: ProjectIndexRow[] = [
     index: "04",
     title: "Genetica ML Lab",
     tags: ["BioML", "WebGL"],
-    year: "2023",
     badge: "04 // LAB",
     color: "#C6F68D",
     image:

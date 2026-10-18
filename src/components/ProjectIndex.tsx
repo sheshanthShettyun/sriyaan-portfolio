@@ -9,24 +9,26 @@ export interface ProjectIndexProps {
 }
 
 type PreviewState = {
-  badge: string;
-  color: string;
   image: string;
   meta: string;
   title: string;
 };
 
+// Top rule of the directory. Not a static border: its alpha is driven by the
+// final row's reveal band, so it is absent while the wordmark is still alone
+// at the center, and fully drawn exactly when the last project lands.
+const ruleColor = (amount: number) => `rgba(242, 237, 228, ${(0.08 * amount).toFixed(4)})`;
+
 export default function ProjectIndex({ rows = projectIndexRows }: Readonly<ProjectIndexProps>) {
   const { mode, revealed } = useMode();
   const [preview, setPreview] = useState<PreviewState>({
-    badge: rows[0]?.badge ?? "",
-    color: rows[0]?.color ?? "#C6F68D",
     image: rows[0]?.image ?? "",
     meta: rows[0]?.meta ?? "",
     title: rows[0]?.title ?? "",
   });
   const [previewActive, setPreviewActive] = useState(false);
   const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const ruleRef = useRef<HTMLElement>(null);
 
   const portalRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0, y: 0 });
@@ -75,6 +77,7 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
             el.style.opacity = "0";
             el.style.transform = "translateY(22px)";
           });
+          if (ruleRef.current) ruleRef.current.style.borderTopColor = ruleColor(0);
           lastHidden = true;
         }
       } else {
@@ -85,17 +88,20 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
             document.documentElement.scrollHeight - window.innerHeight,
           );
           const progress = Math.min(1, Math.max(0, y / journey));
+          let tail = 0;
           rows.forEach((_, i) => {
             const p = Math.min(
               1,
               Math.max(0, (progress - (i * 1) / rows.length) * rows.length),
             );
+            if (i === rows.length - 1) tail = p;
             const el = rowRefs.current.get(i);
             if (el) {
               el.style.opacity = String(p);
               el.style.transform = `translateY(${(1 - p) * 22}px)`;
             }
           });
+          if (ruleRef.current) ruleRef.current.style.borderTopColor = ruleColor(tail);
           lastHidden = false;
           lastY = y;
         }
@@ -111,8 +117,6 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
       if (mode !== "projects" || !revealed) return;
       visible.current = true;
       setPreview({
-        badge: row.badge,
-        color: row.color,
         image: row.image,
         meta: row.meta,
         title: row.title,
@@ -163,36 +167,25 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
         aria-hidden
       >
         <div
-          className="relative flex h-full w-full flex-col justify-between overflow-hidden bg-cover bg-center p-6"
+          className="relative flex h-full w-full flex-col justify-end overflow-hidden bg-cover bg-center p-6"
           id="preview-inner-canvas"
           style={{
             backgroundImage: `linear-gradient(180deg, rgba(11,11,11,0.2) 0%, rgba(11,11,11,0.85) 100%), url('${preview.image}')`,
           }}
         >
-          <div className="z-10 flex items-center justify-between">
-            <span
-              className="rounded-full border border-white/10 bg-black/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest backdrop-blur-md"
-              id="preview-badge"
-              style={{ color: preview.color }}
-            >
-              {preview.badge}
-            </span>
-            <span className="relative flex h-2 w-2">
-              <span
-                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
-                style={{ backgroundColor: preview.color }}
-              />
-              <span
-                className="relative inline-flex h-2 w-2 rounded-full"
-                style={{ backgroundColor: preview.color }}
-              />
-            </span>
-          </div>
           <div className="z-10 rounded-xl border border-white/10 bg-black/80 p-3 backdrop-blur-md">
-            <div className="mb-1 font-display text-sm font-bold text-white" id="preview-headline">
+            <div
+              className="mb-1 text-[20px] font-normal leading-none tracking-[-0.02em] text-[#F2EDE4]"
+              id="preview-headline"
+              style={{ fontFamily: '"PangeaAfrikan", system-ui, sans-serif' }}
+            >
               {preview.title}
             </div>
-            <div className="font-mono text-[11px] text-[#85817B]" id="preview-meta">
+            <div
+              className="text-[16px] font-normal leading-[112%] tracking-[-0.014em] text-[#85817B]"
+              id="preview-meta"
+              style={{ fontFamily: '"PangeaAfrikan", system-ui, sans-serif' }}
+            >
               {preview.meta}
             </div>
           </div>
@@ -206,8 +199,10 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
       {/* Editorial Project Index Directory */}
       <section
         aria-label="Selected Projects Directory"
-        className="z-30 mx-auto mb-4 mt-0 w-full max-w-6xl border-t border-[rgba(242,237,228,0.08)] px-4 pt-4 sm:px-8"
+        className="z-30 mx-auto mb-4 mt-0 w-full max-w-6xl border-t px-4 pt-4 sm:px-8"
         id="editorial-projects-section"
+        ref={ruleRef}
+        style={{ borderTopColor: ruleColor(0) }}
       >
         {/* Editorial Rows */}
         <div className="flex w-full flex-col divide-y divide-white/5">
@@ -226,12 +221,17 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
               onMouseLeave={onRowLeave}
             >
               <div className="flex items-baseline">
-                <h3 className="row-title font-display text-2xl font-bold tracking-tight text-[#ECEBE4] sm:text-3xl md:text-4xl">
-                  {row.title}
-                </h3>
+                <div className="row-title-mask font-display text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
+                  <div className="row-title-track">
+                    <h3 className="row-title text-[#ECEBE4]">{row.title}</h3>
+                    <h3 aria-hidden="true" className="row-title row-title-ghost text-[#ECEBE4]">
+                      {row.title}
+                    </h3>
+                  </div>
+                </div>
               </div>
               <div className="flex items-center justify-between gap-6 sm:gap-10 md:justify-end">
-                <div className="flex items-center gap-2 font-mono text-xs text-[#85817B]">
+                <div className="row-tags flex items-center gap-2 text-xs text-[#85817B]">
                   {row.tags.map((tag) => (
                     <span
                       key={tag}
@@ -241,7 +241,6 @@ export default function ProjectIndex({ rows = projectIndexRows }: Readonly<Proje
                     </span>
                   ))}
                 </div>
-                <span className="font-mono text-xs text-[#85817B]">{row.year}</span>
                 <div className="row-arrow" style={{ color: row.color }}>
                   <svg
                     className="h-5 w-5"

@@ -4,10 +4,19 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 const GITHUB_USER = "sheshanthShettyun";
 const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
+const AVATAR_URL = `https://github.com/${GITHUB_USER}.png`;
+
+// Warm the avatar at bundle load. The card mounts on first open, so without
+// this the first click fetches the PNG and it paints in late, after the pop.
+if (typeof window !== "undefined") {
+  const warm = new Image();
+  warm.src = AVATAR_URL;
+  // Decode too, so the bitmap is ready to paint and the first open shows the
+  // avatar in the same frame as the card rather than a beat later.
+  void warm.decode?.().catch(() => {});
+}
 const COLS = 21;
 const ROWS = 5;
-// Authentic GitHub dark-mode greens: empty → most contributions.
-const LEVELS = ["#1b211d", "#0e4429", "#006d32", "#26a641", "#39d353"];
 
 interface ContributionDay {
   count: number;
@@ -84,6 +93,12 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
   const wrapRef = useRef<HTMLDivElement>(null);
   const tailRef = useRef<SVGSVGElement>(null);
   const [imgOk, setImgOk] = useState(true);
+  const [avatarReady, setAvatarReady] = useState(false);
+  const avatarRef = useRef<HTMLImageElement>(null);
+  // Hold the card back until the avatar can paint, so the photo never lands a
+  // beat after the bubble. The module-level preload makes this instant in
+  // practice; the timer is only a net for a stalled request.
+  const reveal = !imgOk || avatarReady;
   const [live, setLive] = useState<ContributionDay[] | null>(null);
   const fallback = useMemo(buildGrid, []);
   const cells = live ? live.map((d) => d.level) : fallback;
@@ -93,6 +108,19 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
       if (days) setLive(days);
     });
   }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setAvatarReady(false);
+      return;
+    }
+    if (avatarRef.current?.complete) {
+      setAvatarReady(true);
+      return;
+    }
+    const t = window.setTimeout(() => setAvatarReady(true), 900);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   const [leaving, setLeaving] = useState(false);
   const leavingRef = useRef(false);
@@ -157,8 +185,9 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
       if (btn) {
         const b = btn.getBoundingClientRect();
         const cardLeft = r.left + shift;
-        const at = b.x + b.width / 2 - cardLeft - 16;
-        tail.style.left = `${Math.round(Math.max(8, Math.min(r.width - 40, at)))}px`;
+        const at = b.x + b.width / 2 - cardLeft - 32;
+        const span = r.width - 92;
+        tail.style.left = `${Math.round(Math.max(28, Math.min(span, at)))}px`;
       }
     };
     anchor();
@@ -179,7 +208,7 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
         ref={ref}
         role="dialog"
         aria-label="GitHub contributions"
-        className={`${leaving ? "gh-leave" : "gh-pop"} pointer-events-auto relative w-full rounded-[28px] border border-white/10 bg-[#141414] p-6 shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)]`}
+        className={`${reveal ? (leaving ? "gh-leave" : "gh-pop") : "opacity-0"} gh-bubble pointer-events-auto relative w-full rounded-[28px] bg-[#141414] p-6 shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)]`}
       >
       <div className="flex items-start justify-between gap-4">
         <a
@@ -190,11 +219,19 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
         >
           {imgOk ? (
             <img
-              src={`https://github.com/${GITHUB_USER}.png`}
+              ref={avatarRef}
+              src={AVATAR_URL}
               alt="sheshanthShettyun GitHub avatar"
               width={72}
               height={72}
-              onError={() => setImgOk(false)}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              onLoad={() => setAvatarReady(true)}
+              onError={() => {
+                setImgOk(false);
+                setAvatarReady(true);
+              }}
               className="h-[72px] w-[72px] shrink-0 rounded-full bg-[#1b211d] object-cover"
             />
           ) : (
@@ -255,27 +292,24 @@ export default function GitHubCard({ open, onClose }: Readonly<GitHubCardProps>)
             // biome-ignore lint/suspicious/noArrayIndexKey: static generated grid
             key={i}
             className="h-[14px] w-[14px] rounded-[4px]"
-            style={{ backgroundColor: LEVELS[level] }}
+            style={{ backgroundColor: `var(--gh-cell-${level})` }}
           />
         ))}
       </div>
 
-      {/* Speech-bubble tail: stroked V overlapping the card seam */}
+      {/* Tail — same fill as the body, overlapping it by 22px, no stroke
+          anywhere, so body + tail read as one shape. Straight tapering sides
+          (a triangle) meeting in a filleted 5px-radius apex, so the tip reads
+          soft rather than needle-sharp. Sides are angled, not concave, so the
+          junction with the body's bottom edge is a clean shoulder, not a notch. */}
       <svg
         ref={tailRef}
         aria-hidden="true"
-        className="absolute h-[18px] w-[32px]"
-        viewBox="0 0 32 18"
-        style={{ bottom: "-15px" }}
+        className="gh-tail absolute h-[40px] w-[64px]"
+        viewBox="0 0 64 40"
+        style={{ bottom: "-18px" }}
       >
-        <path
-          d="M2 2 L16 16 L30 2"
-          fill="#141414"
-          stroke="rgba(255, 255, 255, 0.1)"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
+        <path d="M3.8 0 L27.9 34.2 Q32 40 36.1 34.2 L60.2 0 Z" />
       </svg>
       </div>
     </div>

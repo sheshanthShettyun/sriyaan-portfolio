@@ -170,6 +170,11 @@
   /* ...except the toys living on it: the bouncy dot must stay grabbable. */
   #accent-dot {
     pointer-events: auto;
+    /* Optical centering: the trailing letter-spacing (-0.07em) is counted
+       inside the i's inline box, shrinking its right edge, so the box center
+       sits 0.035em (half the tracking) left of the glyph's advance center.
+       Add that half back so the ball sits over the stem's ink. */
+    left: calc(50% + 0.035em);
   }
   /* Pushable buttons: translate must apply instantly every frame, so it
      is carved out of their `transition-all` (colors/borders still ease). */
@@ -201,7 +206,8 @@
     font-weight: 400;
     letter-spacing: -0.02em;
   }
-  nav[aria-label="Quick Navigation"] a {
+  nav[aria-label="Quick Navigation"] a,
+  nav[aria-label="Quick Navigation"] .book-trigger {
     transition:
       background-color 1.2s cubic-bezier(0.215, 0.61, 0.355, 1),
       color 1.2s cubic-bezier(0.215, 0.61, 0.355, 1),
@@ -585,13 +591,40 @@ html.no-scroll body {
 }
 
 .project-row .row-title {
-  transition:
-    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.3s ease;
+  transition: color 0.3s ease;
 }
 .project-row:hover .row-title {
-  transform: translateX(12px);
   color: #ffffff;
+}
+
+/* Line-by-line roll: the title sits in a one-line window and an identical copy
+   sits exactly one line below it; hovering slides the pair up by exactly one
+   line, so the copy lands where the original was, seamless. The slack padding
+   lives on the copies (never on the mask) so glyphs can't be clipped and the
+   ghost can't peek into the window; the mask cancels that padding with a
+   matching negative margin, leaving the row's height untouched. */
+.row-title-mask {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  margin-block: -0.09em;
+}
+.row-title-track {
+  position: relative;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.row-title-mask .row-title {
+  padding-block: 0.09em;
+}
+.row-title-ghost {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+}
+.project-row:hover .row-title-track {
+  transform: translateY(-100%);
 }
 
 .project-row .row-arrow {
@@ -604,6 +637,14 @@ html.no-scroll body {
 .project-row:hover .row-arrow {
   transform: translateX(0);
   opacity: 1;
+}
+
+/* Row stack pills in the Companies typeface (PangeaAfrikan 400) — same family,
+   weight, and tracking as the focus list, About Me copy, and Contact mail. */
+.row-tags {
+  font-family: "PangeaAfrikan", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }
 
 /* Rollout entrance for the bottom-dock buttons */
@@ -682,6 +723,7 @@ nav.rolls > a:nth-child(3) {
   .cinematic-viewport,
   .project-row,
   .project-row .row-title,
+  .row-title-track,
   .project-row .row-arrow,
   #editorial-projects-section,
   #floating-preview-portal,
@@ -735,17 +777,6 @@ html.light ::selection {
   background: #1f1f1f;
   color: #ece8df;
 }
-/* opencode badge: swap wordmark asset between themes */
-.opencode-wm-light {
-  display: none;
-}
-html.light .opencode-wm-dark {
-  display: none;
-}
-html.light .opencode-wm-light {
-  display: block;
-}
-
 html.light .hero-wordmark {
   color: #1f1f1f;
   text-shadow:
@@ -807,6 +838,38 @@ html.light [class*="hover:border-white/25"]:hover { border-color: rgba(31, 31, 3
 html.light [class*="hover:bg-white/[0.05]"]:hover { background-color: rgba(31, 31, 31, 0.05); }
 html.light .qd-about-marker { color: rgba(31, 31, 31, 0.55); }
 
+/* Contribution cells — GitHub's own scale, per theme. Painted from these vars
+   rather than literals, because the dark ramp on the light card collapses:
+   level 0 (#1b211d) and level 1 (#0e4429) are both near-black, so empty cells
+   read as filled and the two lowest steps are indistinguishable. */
+:root {
+  --gh-cell-0: #1b211d;
+  --gh-cell-1: #0e4429;
+  --gh-cell-2: #006d32;
+  --gh-cell-3: #26a641;
+  --gh-cell-4: #39d353;
+}
+html.light {
+  --gh-cell-0: #ebedf0;
+  --gh-cell-1: #9be9a8;
+  --gh-cell-2: #40c463;
+  --gh-cell-3: #30a14e;
+  --gh-cell-4: #216e39;
+}
+
+/* GitHub bubble — one borderless shape: body and tail share one fill so the
+   joint can't show a seam. Light mode uses white, because the light card
+   literal maps to #ece8df, which is the page background itself. */
+.gh-tail {
+  fill: #141414;
+}
+html.light .gh-bubble {
+  background-color: #ffffff;
+}
+html.light .gh-tail {
+  fill: #ffffff;
+}
+
 /* GitHub bubble card entrance */
 @keyframes gh-pop {
   from {
@@ -843,5 +906,464 @@ html.light .qd-about-marker { color: rgba(31, 31, 31, 0.55); }
   }
   .gh-leave {
     animation: none;
+  }
+}
+
+/* ============ EXPERIENCE BOOK (home dock) ============
+   A real hardcover, not a card: the cover hinges on the spine (rotateY about
+   the book's centre line, transform-origin left) and every turn is a leaf
+   swinging -180deg under a gutter shadow. Depth comes from three layers —
+   page block, leaf, cover — separated on the Z axis so the browser's own
+   3D sort resolves them, plus a bevelled top edge and a spine band in
+   shadow. Portal'd to <body> so no ancestor transform can clip it. */
+html.book-lock,
+html.book-lock body {
+  overflow: hidden;
+}
+
+.book-trigger {
+  cursor: pointer;
+}
+
+.book-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  cursor: pointer;
+}
+.book-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 50% 44%,
+    rgba(10, 10, 10, 0.6),
+    rgba(5, 5, 5, 0.9)
+  );
+  backdrop-filter: blur(3px);
+}
+/* Absolute + translate, not grid centring: a 600px item larger than the
+   viewport makes `place-items: center` fall back to `start`, which shoved the
+   book off the right edge on phones. This pins the centre at any scale. */
+.book-scale {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 600px;
+  height: 400px;
+  cursor: pointer;
+  transform: translate(-50%, -50%) scale(var(--book-scale, 1));
+  transform-origin: center center;
+}
+/* Lift wrapper for the float-up entrance. Deliberately above .book-stage
+   (which owns the perspective): an opacity/transform group between the
+   perspective and the 3D children would force `transform-style` to flat. */
+.book-entrance {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.book-stage {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  perspective: 2000px;
+  perspective-origin: 50% 44%;
+}
+.book-floor {
+  position: absolute;
+  left: 50%;
+  bottom: -30px;
+  width: 600px;
+  height: 56px;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 70%);
+  filter: blur(7px);
+}
+.book-deck {
+  position: absolute;
+  inset: 0;
+  width: 600px;
+  height: 400px;
+  transform-style: preserve-3d;
+}
+
+.book-page {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  height: 400px;
+  overflow: hidden;
+  color: #141110;
+  background: linear-gradient(180deg, #f4ecdc 0%, #efe6d4 58%, #e8ddc8 100%);
+  box-shadow: 0 20px 44px -20px rgba(0, 0, 0, 0.6);
+}
+.book-page-left {
+  left: 0;
+  border-radius: 3px 0 0 3px;
+  box-shadow:
+    0 20px 44px -20px rgba(0, 0, 0, 0.6),
+    inset 4px 0 7px -5px rgba(70, 52, 24, 0.32);
+}
+.book-page-right {
+  left: 300px;
+  border-radius: 0 3px 3px 0;
+  box-shadow:
+    0 20px 44px -20px rgba(0, 0, 0, 0.6),
+    inset -4px 0 7px -5px rgba(70, 52, 24, 0.36);
+}
+/* Paper darkens as it falls into the spine. */
+.book-page-left::after,
+.book-page-right::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+}
+.book-page-left::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(78, 58, 28, 0.11), rgba(78, 58, 28, 0));
+}
+.book-page-right::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(78, 58, 28, 0.13), rgba(78, 58, 28, 0));
+}
+
+/* Gutter shadow: strongest at the spine, gone by the outer margin. */
+
+/* Leaf and cover both hinge on the spine (left edge, at x = 300). */
+.book-leaf {
+  position: absolute;
+  left: 300px;
+  top: 0;
+  width: 300px;
+  height: 400px;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+}
+/* The board is proud of the text block, so when the cover falls open its edge
+   shows above and below the left page — the hardcover tell. */
+.book-cover {
+  position: absolute;
+  left: 300px;
+  top: -4px;
+  width: 300px;
+  height: 408px;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+}
+.book-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 3px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* Open state only: the remaining page block shows as a fore-edge and tail
+   stacked-paper slice just outside the right page. */
+.book-stack {
+  position: absolute;
+  left: 300px;
+  top: 0;
+  width: 307px;
+  height: 400px;
+  pointer-events: none;
+}
+.book-stack::before {
+  content: "";
+  position: absolute;
+  left: 300px;
+  top: 3px;
+  bottom: 6px;
+  width: 7px;
+  border-radius: 0 4px 4px 0;
+  background: repeating-linear-gradient(180deg, #f2e9d7 0 1.7px, #dccdb0 1.7px 3.4px);
+  box-shadow:
+    1px 0 0 rgba(255, 255, 255, 0.45),
+    inset -1px 0 0 rgba(120, 96, 54, 0.25);
+}
+.book-stack::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -5px;
+  width: 307px;
+  height: 6px;
+  border-radius: 0 0 4px 4px;
+  background: repeating-linear-gradient(90deg, #f2e9d7 0 1.7px, #dccdb0 1.7px 3.4px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(120, 96, 54, 0.25);
+}
+
+.book-leaf-front,
+.book-leaf-back {
+  color: #141110;
+  background: linear-gradient(180deg, #f4ecdc 0%, #efe6d4 58%, #e8ddc8 100%);
+}
+/* The front of a turning sheet has to read as the right-hand page it lifts,
+   and its back as the left-hand page it lands on: same radius, same gutter. */
+.book-leaf-front {
+  border-radius: 0 3px 3px 0;
+}
+.book-leaf-back {
+  transform: rotateY(180deg);
+  border-radius: 3px 0 0 3px;
+}
+.book-leaf-front::after,
+.book-leaf-back::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+}
+.book-leaf-front::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(78, 58, 28, 0.13), rgba(78, 58, 28, 0));
+}
+.book-leaf-back::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(78, 58, 28, 0.11), rgba(78, 58, 28, 0));
+}
+
+.book-cover-front {
+  color: #171310;
+  border-radius: 10px 5px 7px 10px;
+  background: linear-gradient(158deg, #ead9bb 0%, #e2d1b0 42%, #d6c29d 78%, #cdb893 100%);
+  box-shadow:
+    /* rim light: a lit top edge, a faint highlight down the fore-edge */
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+    inset -1.5px 0 0 rgba(255, 255, 255, 0.18),
+    /* board thickness at the tail */
+    inset 0 -3px 4px -2px rgba(84, 62, 30, 0.5),
+    /* ambient occlusion beneath the whole board */
+    0 18px 34px -22px rgba(0, 0, 0, 0.55);
+}
+/* The spine is a cylinder: a specular line, a groove, then the flat board. */
+.book-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  border-radius: 10px 0 0 10px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.72) 0px,
+    rgba(255, 255, 255, 0.3) 1.5px,
+    rgba(255, 255, 255, 0) 4px,
+    rgba(92, 70, 34, 0.2) 10px,
+    rgba(92, 70, 34, 0.06) 17px,
+    rgba(92, 70, 34, 0) 24px
+  );
+}
+.book-cover-back {
+  transform: rotateY(180deg);
+  border-radius: 10px 5px 7px 10px;
+  background: linear-gradient(158deg, #d9c7a4, #cdb893);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -3px 4px -2px rgba(84, 62, 30, 0.45);
+}
+/* Pastedown: an endpaper sheet inside the board, with its own inset edge. */
+.book-endpaper {
+  position: absolute;
+  inset: 13px;
+  border-radius: 4px;
+  background:
+    radial-gradient(120% 80% at 28% 24%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(158deg, #f0e7d5, #e8ddc6);
+  box-shadow: inset 0 0 0 1px rgba(120, 96, 54, 0.16);
+}
+
+/* The lower third is a lighter pasted label, with the reference's hard edge. */
+.book-cover-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 31%;
+  border-radius: 0 0 7px 10px;
+  background: linear-gradient(178deg, #f4edde 0%, #efe6d4 62%, #e9dfc9 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 -1px 0 rgba(104, 80, 40, 0.3);
+}
+/* Blind-embossed panel: three nested hairlines, each a light/dark pair. */
+.book-emboss {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  top: 54px;
+  height: 184px;
+  border: 1px solid rgba(150, 120, 70, 0.22);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.book-emboss::before {
+  content: "";
+  position: absolute;
+  inset: 15px;
+  border: 1px solid rgba(150, 120, 70, 0.2);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.book-emboss::after {
+  content: "";
+  position: absolute;
+  inset: 34px;
+  border: 1px solid rgba(140, 112, 64, 0.28);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.book-cover-copy {
+  position: absolute;
+  left: 28px;
+  right: 26px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.book-cover-kicker {
+  position: absolute;
+  left: 28px;
+  top: 26px;
+  font-family: var(--font-geist-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(23, 19, 16, 0.5);
+}
+.book-cover-title {
+  font-family: var(--font-primary);
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: -0.024em;
+  color: #171310;
+}
+.book-cover-rule {
+  position: absolute;
+  left: 50%;
+  top: 262px;
+  width: 56px;
+  height: 1px;
+  transform: translateX(-50%);
+  background: rgba(120, 96, 54, 0.42);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.book-cover-sub {
+  font-family: var(--font-geist-mono);
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
+  color: rgba(23, 19, 16, 0.6);
+}
+.book-cover-foot {
+  position: absolute;
+  right: 26px;
+  top: 27px;
+  font-family: var(--font-geist-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: rgba(23, 19, 16, 0.42);
+}
+
+.book-page-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 46px 38px 36px;
+}
+.book-eyebrow {
+  font-family: var(--font-geist-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(23, 19, 16, 0.5);
+}
+.book-heading {
+  margin-top: 10px;
+  font-family: var(--font-primary);
+  font-size: 21px;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  color: #141110;
+}
+.book-heading-lg {
+  font-size: 32px;
+  line-height: 1.04;
+}
+.book-sub {
+  margin-top: 8px;
+  font-family: var(--font-geist-mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: rgba(23, 19, 16, 0.62);
+}
+.book-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(23, 19, 16, 0.14);
+}
+.book-list li {
+  position: relative;
+  padding-left: 16px;
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(23, 19, 16, 0.66);
+}
+.book-list li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: rgba(23, 19, 16, 0.38);
+}
+/* Last page footer: the resume itself, bottom-anchored in the text block. */
+.book-resume {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 7px;
+  margin-top: auto;
+  padding: 8px 14px;
+  border: 1px solid rgba(23, 19, 16, 0.24);
+  border-radius: 999px;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #171310;
+  transition:
+    background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.book-resume:hover {
+  background: rgba(23, 19, 16, 0.07);
+  border-color: rgba(23, 19, 16, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-cover,
+  .book-leaf,
+  .book-deck,
+  .book-page-left {
+    transition: none !important;
   }
 }
